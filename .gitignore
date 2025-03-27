@@ -1,2 +1,5 @@
 .idea
 .venv
+db.sqlite3
+__pycache__/
+Books_service/__pycache__/settings.cpython-311.pyc
