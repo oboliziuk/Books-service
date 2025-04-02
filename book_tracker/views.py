@@ -1,9 +1,9 @@
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, viewsets
+from rest_framework.permissions import AllowAny, IsAdminUser
 
 from book_tracker.models import Book
-from book_tracker.permissions import IsAdminOrIfAuthenticatedReadOnly
 from book_tracker.serializers import (
     BookSerializer,
     BookDetailSerializer,
@@ -21,7 +21,12 @@ class BookViewSet(
 ):
     queryset = Book.objects.all()
     serializer_class = BookSerializer
-    permission_classes = (IsAdminOrIfAuthenticatedReadOnly,)
+
+    def get_permissions(self):
+        """Configure access for each method"""
+        if self.action in ["list", "retrieve"]:
+            return [AllowAny()]
+        return [IsAdminUser()]
 
     @staticmethod
     def _params_to_ints(qs):
