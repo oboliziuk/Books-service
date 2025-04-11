@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from book_tracker.models import Book
 from book_tracker.serializers import BookDetailSerializer
 from borrow_service.models import Borrowing
 from django.contrib.auth import get_user_model
@@ -18,7 +19,6 @@ class BorrowingSerializer(serializers.ModelSerializer):
             "expected_return_date",
             "actual_return_date",
             "book",
-            "user",
         )
 
 
@@ -82,5 +82,39 @@ class BorrowingReturnSerializer(serializers.ModelSerializer):
     def validate_actual_return_date(self, value):
         instance = self.instance
         if value < instance.borrow_date:
-            raise serializers.ValidationError("The return date cannot be earlier than the borrowing date.")
+            raise serializers.ValidationError(
+                "The return date cannot be earlier than the borrowing date."
+            )
         return value
+
+
+class CreateBorrowingSerializer(BorrowingSerializer):
+    book = serializers.PrimaryKeyRelatedField(queryset=Book.objects.all())
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Borrowing
+        fields = (
+            "id",
+            "borrow_date",
+            "expected_return_date",
+            "actual_return_date",
+            "book",
+            "user"
+        )
+
+    def validate(self, attrs):
+        if attrs['book'].inventory < 1:
+            raise serializers.ValidationError(
+                {
+                    f"Borrowing is not allowed. "
+                    f"{attrs['book'].title} is out of stock."
+                }
+            )
+        return attrs
+
+    def create(self, validated_data):
+        book = validated_data["book"]
+        book.inventory -= 1
+        book.save()
+        return super().create(validated_data)
