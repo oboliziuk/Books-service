@@ -1,11 +1,6 @@
 from django.db import models
-
 from Books_service import settings
 from book_tracker.models import Book
-
-# Add the borrowing model with constraints for borrow_date, expected_return_date, and actual_return_date.
-# Implement a read serializer with detailed book info
-# Implement the list & detail endpoints
 
 
 class Borrowing(models.Model):
