@@ -1,3 +1,5 @@
+from django.utils import timezone
+
 from django.db import models
 from Books_service import settings
 from book_tracker.models import Book
@@ -16,3 +18,10 @@ class Borrowing(models.Model):
     def __str__(self):
         return (f"Borrowing: {self.book.title} by {self.user} "
                 f"(Expected return: {self.expected_return_date})")
+
+    def return_book(self):
+        if self.actual_return_date is None:
+            self.actual_return_date = timezone.now().date()
+            self.book.inventory += 1
+            self.book.save()
+            self.save(update_fields=["actual_return_date"])
