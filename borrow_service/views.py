@@ -1,12 +1,7 @@
-from datetime import timezone
-
-from django.shortcuts import render
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import viewsets
-from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 
 from borrow_service.models import Borrowing
 from borrow_service.serializers import (
@@ -23,18 +18,22 @@ class BorrowingViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        user = self.request.user
+        user_id_str = self.request.query_params.get("user_id")
         is_active = self.request.query_params.get("is_active")
-        user_id_str = self.request.query_params.get("user")
 
-        queryset = self.queryset.filter(user=self.request.user)
+        if user.is_staff:
+            queryset = Borrowing.objects.all()
+        else:
+            queryset = Borrowing.objects.filter(user=user)
+
+        if user.is_staff and user_id_str and user_id_str.isdigit():
+            queryset = queryset.filter(user_id=int(user_id_str))
 
         if is_active == "true":
             queryset = queryset.filter(actual_return_date__isnull=True)
         elif is_active == "false":
             queryset = queryset.filter(actual_return_date__isnull=False)
-
-        if user_id_str and user_id_str.isdigit():
-            queryset = queryset.filter(user_id=int(user_id_str))
 
         return queryset
 
