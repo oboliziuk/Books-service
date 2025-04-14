@@ -1,7 +1,10 @@
+from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import viewsets
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from borrow_service.models import Borrowing
 from borrow_service.serializers import (
@@ -49,6 +52,23 @@ class BorrowingViewSet(viewsets.ModelViewSet):
             return CreateBorrowingSerializer
 
         return BorrowingSerializer
+
+    @action(detail=True, methods=["POST"], url_path="return")
+    def return_borrowing(self, request, pk=None):
+        borrowing = self.get_object()
+
+        if borrowing.actual_return_date:
+            return Response({"error": "Book already returned."}, status=status.HTTP_400_BAD_REQUEST)
+
+        borrowing.actual_return_date = timezone.now().date()
+
+        for book in borrowing.book.all():
+            book.inventory += 1
+            book.save()
+
+        borrowing.save(update_fields=["actual_return_date"])
+
+        return Response({"message": "Book returned successfully."}, status=status.HTTP_200_OK)
 
     @extend_schema(
         parameters=[
