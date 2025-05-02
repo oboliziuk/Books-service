@@ -1,7 +1,7 @@
 from django.utils import timezone
 
 from django.db import models
-from Books_service import settings
+from books_service import settings
 from book_tracker.models import Book
 
 
